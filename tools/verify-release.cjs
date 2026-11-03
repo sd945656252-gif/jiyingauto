@@ -23,7 +23,7 @@ function verifyRelease(directory,expectedVersion) {
   return {schema:'jiying.release-packet/v1',version:expectedVersion,channel,
     stable:!prerelease,assets:[filename,installer,blockmap].map(file=>({name:path.basename(file),bytes:fs.statSync(file).size,
       sha256:createHash('sha256').update(fs.readFileSync(file)).digest('hex')})),
-    published:false,message:prerelease?'预览版仅用于内部测试；正式版更新通道不会接收此版本':'发布时将三个文件一起上传到同版本 GitHub Release'};
+    published:false,message:prerelease?'预览版本不进入正式版更新通道；发行还需核验对应源码及所选签名策略':'发布时将三个文件一起上传到同版本 GitHub Release'};
 }
 if(require.main===module){
   const value=verifyRelease(process.argv[2],process.argv[3]||require('./package.json').version);

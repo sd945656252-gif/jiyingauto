@@ -115,6 +115,7 @@ def verify(root, descriptor=None):
     notices = checked_file(root, lock['notices']['filename'], lock['notices']['sha256'])
     with zipfile.ZipFile(notices) as archive:
         names = archive.namelist()
+        notice_names = set(names)
         if len(names) != len(set(names)) or archive.testzip() is not None:
             raise ValueError('Corrupt or duplicate license notice files')
         for identifier, item in lock['standard_license_texts']['texts'].items():
@@ -122,7 +123,7 @@ def verify(root, descriptor=None):
                 raise ValueError('Missing or changed standard license: ' + identifier)
         for item in components:
             for name in item['notice_files']:
-                if name not in names:
+                if name not in notice_names:
                     raise ValueError('Missing dependency license notice: ' + name)
 
     binary_archive = checked_file(root, descriptor['binaryArchive']['name'], descriptor['binaryArchive']['sha256'])

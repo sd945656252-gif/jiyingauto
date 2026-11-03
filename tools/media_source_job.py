@@ -6,7 +6,10 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import io
+import tarfile
 import urllib.request
+import zipfile
 
 repo = 'sd945656252-gif/jiyingauto'
 version = os.environ['RELEASE_VERSION']
@@ -27,6 +30,25 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def source_tree(stream):
+    result = {}
+    with tarfile.open(fileobj=stream, mode='r:gz') as archive:
+        for item in archive:
+            if item.isdir():
+                continue
+            path = item.name.split('/', 1)[1]
+            if path in result:
+                raise ValueError('Duplicate source path')
+            if item.isfile():
+                content = hashlib.file_digest(archive.extractfile(item), 'sha256').hexdigest()
+                result[path] = ('file', content, bool(item.mode & 0o111))
+            elif item.issym():
+                result[path] = ('symlink', item.linkname)
+            else:
+                raise ValueError('Unsupported repository archive member')
+    return result
+
+
 release = json.loads(gh('release', 'view', tag, '--repo', repo, '--json', 'isDraft,isPrerelease'))
 if not release['isDraft'] or not release['isPrerelease']:
     raise SystemExit('This job only updates existing prerelease drafts')
@@ -45,12 +67,20 @@ if cache['digest'] != 'sha256:' + descriptor['sourceCache']['sha256'] or cache['
 run = json.loads(gh('api', 'repos/BtbN/FFmpeg-Builds/actions/runs/' + descriptor['buildRun'].rsplit('/', 1)[1]))
 if run['head_sha'] != descriptor['buildRecipeCommit'] or run['conclusion'] != 'success':
     raise SystemExit('Original build was not successful at the pinned commit')
+original_archive_checks = []
 for item in lock['supplemental_sources']:
     if any(key in item['arcname'] for key in ('/ffmpeg-', '/btbn-build-recipes-')):
         target = downloads / ('official-' + item['arcname'].rsplit('/', 1)[1])
         urllib.request.urlretrieve(item['url'], target)
-        if digest(target) != item['sha256']:
-            raise SystemExit('Supplemental source does not match the original repository archive')
+        with zipfile.ZipFile(downloads / 'ffmpeg-9.0.2-btbn-sources-02.zip') as sources:
+            supplied = sources.read(item['arcname'])
+        if hashlib.sha256(supplied).hexdigest() != item['sha256']:
+            raise SystemExit('Altered supplemental archive')
+        with target.open('rb') as primary:
+            if source_tree(primary) != source_tree(io.BytesIO(supplied)):
+                raise SystemExit('Supplemental file contents differ from the pinned original repository: ' + item['arcname'])
+        original_archive_checks.append({'source': item['arcname'], 'originalArchiveSha256': digest(target),
+                                       'suppliedArchiveSha256': item['sha256'], 'allSourceFilesAndExecutableBitsMatched': True})
 binary = descriptor['binaryArchive']
 urllib.request.urlretrieve(binary['url'], downloads / binary['name'])
 subprocess.run(['python3', str(tools / 'verify_ffmpeg_sources.py'), str(downloads),
@@ -61,6 +91,7 @@ report = {'schema': 'jiying.source-actions-evidence/v1', 'repository': repo,
           'workflowCommit': os.environ['GITHUB_SHA'],
           'workflowRun': os.environ['GITHUB_SERVER_URL'] + '/' + repo + '/actions/runs/' + os.environ['GITHUB_RUN_ID'],
           'phase': phase, 'originalBuildCommit': run['head_sha'], 'originalSourceCacheDigest': cache['digest'],
+          'originalRepositorySourceChecks': original_archive_checks,
           'sourceVerificationSha256': digest(packet / 'source-verification.json'),
           'verifierSha256': digest(tools / 'verify_ffmpeg_sources.py'), 'published': False}
 if phase == 'verify-package':
