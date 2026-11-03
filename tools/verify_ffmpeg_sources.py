@@ -74,7 +74,7 @@ def verify(root, descriptor=None):
     recipes = next(data for name, data in supplemental.items() if '/btbn-build-recipes-' in name)
     with tarfile.open(fileobj=io.BytesIO(recipes), mode='r:gz') as archive:
         scripts = {member.name: archive.extractfile(member).read().decode('utf-8')
-                   for member in archive if member.isfile() and '/scripts.d/' in member.name}
+                   for member in archive if (member.isfile() or member.issym() or member.islnk()) and '/scripts.d/' in member.name}
     for component in components:
         matches = [text for name, text in scripts.items()
                    if name.rsplit('/', 1)[-1] == component['stage'] + '.sh']
