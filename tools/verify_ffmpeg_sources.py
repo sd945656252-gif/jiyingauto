@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 import hashlib
 import io
 import json
+import re
 from pathlib import Path
 import shutil
 import tarfile
@@ -78,9 +79,17 @@ def verify(root, descriptor=None):
     for component in components:
         matches = [text for name, text in scripts.items()
                    if name.rsplit('/', 1)[-1] == component['stage'] + '.sh']
+        if not matches and component['stage'] in descriptor['inactiveCacheStages'] and not component['recipe']:
+            continue
         if not matches or any(not any(value in text for text in matches)
                               for value in component['recipe'].values()):
             raise ValueError('Component version is absent from pinned recipe: ' + component['stage'])
+    cached_stages = {item['stage'] for item in components}
+    for name, text in scripts.items():
+        if re.search(r'SCRIPT_SKIP=["\']?1', text):
+            continue
+        if ('SCRIPT_REPO=' in text or 'SCRIPT_URL=' in text) and name.rsplit('/', 1)[-1][:-3] not in cached_stages:
+            raise ValueError('Active source download recipe has no archived source: ' + name)
 
     vendor = next(data for name, data in supplemental.items() if '/rav1e-' in name)
     cargo_checksums = {}
@@ -139,6 +148,7 @@ def verify(root, descriptor=None):
             binaries[tool] = data
     return {'schema': 'jiying.ffmpeg-source-verification/v1', 'ffmpegCommit': lock['ffmpeg_commit'],
             'buildRecipeCommit': lock['build_recipe_commit'], 'dependencySourcesVerified': len(components),
+            'inactiveCacheStagesPreservedAsEvidence': descriptor['inactiveCacheStages'],
             'supplementalSourcesVerified': len(supplemental), 'rustRegistryCratesVerified': len(lock['rav1e_registry_crates']),
             'rustStdRegistryCratesVerified': len(lock['rust_std_registry_crates']),
             'licenseNoticeFilesVerified': len(names), 'binaries': descriptor['binaries'],
