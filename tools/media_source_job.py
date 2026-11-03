@@ -123,5 +123,13 @@ assets = [packet / item['name'] for item in descriptor['sourceAssets']]
 assets.extend(packet / name for name in ['corresponding-source.json', 'source-verification.json', 'source-actions-evidence.json'])
 if phase == 'verify-package':
     assets.extend(packet / name for name in ['release-validation.json', 'release-readiness.json'])
-subprocess.run(['gh', 'release', 'upload', tag, '--repo', repo, '--clobber', *map(str, assets)], check=True)
+    checksum_files = sorted(path for path in packet.iterdir() if path.is_file())
+    checksum = packet / 'SHA256SUMS.txt'
+    checksum.write_text(''.join(digest(path) + '  ' + path.name + '\n' for path in checksum_files), encoding='utf-8')
+    assets.append(checksum)
+existing = json.loads(gh('release', 'view', tag, '--repo', repo, '--json', 'assets'))['assets']
+remote_digests = {item['name']: item.get('digest') for item in existing}
+uploads = [path for path in assets if remote_digests.get(path.name) != 'sha256:' + digest(path)]
+if uploads:
+    subprocess.run(['gh', 'release', 'upload', tag, '--repo', repo, '--clobber', *map(str, uploads)], check=True)
 print(json.dumps(report, indent=2))
