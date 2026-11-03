@@ -1,0 +1,38 @@
+{
+  "schema": "jiying.ffmpeg-source-distribution/v1",
+  "version": "n9.0.2-39-g7adfbe40dc",
+  "binaryArchive": {
+    "name": "ffmpeg-n9.0.2-39-g7adfbe40dc-win64-gpl-9.0.zip",
+    "url": "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-10-31-12-59/ffmpeg-n9.0.2-39-g7adfbe40dc-win64-gpl-9.0.zip",
+    "sha256": "693f3e224bc184b40524a62ca47526cfebaf2504414021b92fe75f677ad868b9"
+  },
+  "binaries": {
+    "ffmpeg": "c930b63cb1ee8b7e2eaf9c15161160edd5c9acad34f0303b5855c8eb142a7e8d",
+    "ffprobe": "075848c1bbb8b4e2e0b0ecba06e8ad06c889a8902ed219d6a9f5758c417ca108"
+  },
+  "ffmpegCommit": "7adfbe40dcde598f93a6963d2f7b22cd75202ccc",
+  "buildRecipeCommit": "5031c6f1082414e53688d39e521849905071070d",
+  "buildRun": "https://github.com/BtbN/FFmpeg-Builds/actions/runs/41199749965",
+  "sourceCache": {
+    "artifactId": 13042311561,
+    "sha256": "3de9f854a07aef24a0029b206e9ef43d674cbd957249575342e9a728d59c2c4d"
+  },
+  "sourceRelease": "https://github.com/mrkbac/portable-ffmpeg/releases/tag/ffmpeg-9.0.2-1",
+  "sourceLock": {
+    "name": "ffmpeg-9.0.2-btbn-source-lock.json",
+    "sha256": "947aa68ce08e9dd719228f8bba3505d3f6198cfe370d0f5eff437dbc653dde54"
+  },
+  "sourceAssets": [
+    {"name": "ffmpeg-9.0.2-btbn-sources-01.zip", "sha256": "ccd17c8a3271da6936ecc4a6daf0d3546600467620248ddb42a1afbfb1027bb4", "roles": ["linked-libraries"]},
+    {"name": "ffmpeg-9.0.2-btbn-sources-02.zip", "sha256": "bd73910da42cf3d82b3d98e906830804da70963af4e07e28f9aacacbff797937", "roles": ["ffmpeg", "linked-libraries", "build-scripts"]},
+    {"name": "ffmpeg-9.0.2-btbn-rust-stdlib-crates.zip", "sha256": "4cdc72650a24cce8ea8eb0947411259d96af403bda37c580296e1bf89ffa3c7e", "roles": ["linked-libraries"]},
+    {"name": "ffmpeg-9.0.2-btbn-notices.zip", "sha256": "601385017d07a09ca6f9a64e39e8574fd0d6adc89a144ac85ef71f131a535226", "roles": []},
+    {"name": "ffmpeg-9.0.2-btbn-source-lock.json", "sha256": "947aa68ce08e9dd719228f8bba3505d3f6198cfe370d0f5eff437dbc653dde54", "roles": []},
+    {"name": "ffmpeg-9.0.2-btbn-RESTORE.md", "sha256": "2ed929bdfe05489823cd3b367a4c4286a173e73c25c8cc16d4a01cb607806b21", "roles": ["build-scripts"]}
+  ],
+  "limitations": [
+    "No bit-for-bit rebuild is claimed.",
+    "The original recipe performs cargo update cc for a build-tool dependency. The source bundle preserves the original runtime locks and registry sources; general toolchain provisioning and that build-tool update are not claimed to be offline-reproducible.",
+    "Technical verification of source provenance and archive contents is not a legal opinion or an evaluation of patent rights."
+  ]
+}

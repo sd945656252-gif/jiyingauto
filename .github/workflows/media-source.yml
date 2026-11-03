@@ -1,0 +1,36 @@
+name: Verify media source distribution
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Preview version to update
+        required: true
+        default: 0.6.0-alpha.7
+      phase:
+        description: Source preparation or final installer verification
+        required: true
+        type: choice
+        options:
+          - sources
+          - verify-package
+permissions:
+  contents: write
+concurrency:
+  group: media-source-${{ inputs.version }}
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Install fixed verification dependencies
+        run: npm ci --ignore-scripts --prefix tools
+      - name: Verify and deliver matching media sources
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          VERIFICATION_PHASE: ${{ inputs.phase }}
+        run: python3 tools/media_source_job.py
